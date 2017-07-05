@@ -1,0 +1,50 @@
+import pybedtools 
+from pybedtools import BedTool
+import pandas as pd
+
+def py_bed_size_select(bed_files=[], size_min=20, size_max=700):
+    """
+    written by peteskene@gmail.com
+    
+    provide a list of bed files; e.g. bed_files = ['A.bed', 'B.bed']; can include path; requires file extension to be 'bed'
+    bed file expected to be <chr> <start> <end> but can have extra columns; these extra columns are kept in size selected file
+    
+    script will auto-generate ouptut filenames including size min and size max e.g. A.20_700.bed, B.20_700.bed
+    
+    script will calculate length of each read and select reads that fit length criteria
+    
+    length info generated is not saved in the output bed file
+    
+    """
+    
+    print 'bed files imported :'
+    print '\n'.join(bed_files)
+    print
+    print 'size_min: ' + str(size_min)
+    print
+    print 'size_max: ' + str(size_max)
+    print
+
+    #generate output file names
+    output_files = [f.replace('.bed', '.'+str(size_min)+'_'+str(size_max)+'.bed') for f in bed_files]
+    
+    for i,j in map(None, bed_files, output_files):
+        print 'operating on: ' + i
+        temp = BedTool(i).to_dataframe()
+        
+        #calculate length and create as new column in dataframe
+        temp['calc_length'] = temp.iloc[:,2].subtract(temp.iloc[:,1])
+        
+        #subset dataframe based on length criteria
+        selected = temp[(temp['calc_length']>=size_min) & (temp['calc_length']<=size_max)]
+        
+        #delete inserted column
+        selected = selected.drop('calc_length', 1)
+        
+        #save size selected bed file
+        selected.to_csv(j, sep='\t', header=False, index=False)
+        print 'generated file: ' + j
+		print
+      
+    
+    return 'Done'
